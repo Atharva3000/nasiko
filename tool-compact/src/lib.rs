@@ -1,14 +1,14 @@
-pub mod error;
-pub mod types;
-pub mod encoder;
 pub mod decoder;
+pub mod encoder;
+pub mod error;
 pub mod stream;
+pub mod types;
 
-pub use error::ToolCompactError;
-pub use types::{CompactTools, FunctionCall, FunctionDef, ToolCall, ToolCallDelta, ToolDef};
-pub use encoder::{decode_tools, encode_tool_signature, encode_tools};
 pub use decoder::{decode_calls, extract_raw_calls, validate_arguments};
+pub use encoder::{decode_tools, encode_tool_signature, encode_tools};
+pub use error::ToolCompactError;
 pub use stream::StreamDecoder;
+pub use types::{CompactTools, FunctionCall, FunctionDef, ToolCall, ToolCallDelta, ToolDef};
 
 #[cfg(test)]
 mod tests {
@@ -72,12 +72,13 @@ mod tests {
     fn test_decode_calls_valid() {
         let tools = vec![sample_calendar_tool()];
         let text = "Here is your event: <<call create_calendar_event {\"title\":\"Design review\",\"start\":\"2026-10-05T15:00:00+05:30\",\"attendees\":[\"riya@example.com\"]}>> Have a nice day!";
-        
+
         let calls = decode_calls(text, &tools).expect("decode failed");
         assert_eq!(calls.len(), 1);
         assert_eq!(calls[0].function.name, "create_calendar_event");
-        
-        let parsed_args: serde_json::Value = serde_json::from_str(&calls[0].function.arguments).unwrap();
+
+        let parsed_args: serde_json::Value =
+            serde_json::from_str(&calls[0].function.arguments).unwrap();
         assert_eq!(parsed_args["title"], "Design review");
         assert_eq!(parsed_args["attendees"][0], "riya@example.com");
     }
@@ -141,7 +142,8 @@ mod tests {
         let calls = stream.finish().expect("stream finish failed");
         assert_eq!(calls.len(), 1);
         assert_eq!(calls[0].function.name, "create_calendar_event");
-        let parsed_args: serde_json::Value = serde_json::from_str(&calls[0].function.arguments).unwrap();
+        let parsed_args: serde_json::Value =
+            serde_json::from_str(&calls[0].function.arguments).unwrap();
         assert_eq!(parsed_args["title"], "Retro");
     }
 
@@ -159,7 +161,8 @@ mod tests {
         let text = "<<call send_email {\"to\":[\"test@example.com\"],\"subject\":\"Symbols\",\"body\":\"Check this arrow: \\>> looks good\"}>>";
         let calls = decode_calls(text, &tools).expect("decode failed");
         assert_eq!(calls.len(), 1);
-        let parsed_args: serde_json::Value = serde_json::from_str(&calls[0].function.arguments).unwrap();
+        let parsed_args: serde_json::Value =
+            serde_json::from_str(&calls[0].function.arguments).unwrap();
         assert_eq!(parsed_args["body"], "Check this arrow: >> looks good");
     }
 }

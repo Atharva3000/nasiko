@@ -4,11 +4,9 @@ use std::fs::{self, File};
 use std::io::Write;
 use std::path::Path;
 
-use nasiko_tool_compact::{
-    decode_calls, encode_tools, StreamDecoder, ToolDef,
-};
+use nasiko_tool_compact::{StreamDecoder, ToolDef, decode_calls, encode_tools};
 use serde::{Deserialize, Serialize};
-use serde_json::{json, Value};
+use serde_json::{Value, json};
 
 #[allow(dead_code)]
 #[derive(Debug, Deserialize)]
@@ -70,7 +68,9 @@ fn parse_tools_catalog(tools_val: &Value) -> HashMap<String, ToolDef> {
                 if let Some(name) = obj.get("name").and_then(Value::as_str) {
                     let tool = ToolDef::new_function(
                         name,
-                        obj.get("description").and_then(Value::as_str).map(str::to_string),
+                        obj.get("description")
+                            .and_then(Value::as_str)
+                            .map(str::to_string),
                         obj.get("parameters").cloned(),
                     );
                     catalog.insert(name.to_string(), tool);
@@ -84,7 +84,9 @@ fn parse_tools_catalog(tools_val: &Value) -> HashMap<String, ToolDef> {
             } else if let Some(obj) = val.as_object() {
                 let tool = ToolDef::new_function(
                     name.as_str(),
-                    obj.get("description").and_then(Value::as_str).map(str::to_string),
+                    obj.get("description")
+                        .and_then(Value::as_str)
+                        .map(str::to_string),
                     obj.get("parameters").cloned(),
                 );
                 catalog.insert(name.clone(), tool);
@@ -96,7 +98,8 @@ fn parse_tools_catalog(tools_val: &Value) -> HashMap<String, ToolDef> {
 }
 
 fn main() -> Result<(), Box<dyn std::error::Error>> {
-    let eval_set_path = env::var("EVAL_SET").unwrap_or_else(|_| "compact-tools-eval.json".to_string());
+    let eval_set_path =
+        env::var("EVAL_SET").unwrap_or_else(|_| "compact-tools-eval.json".to_string());
     let out_path = env::var("OUT").unwrap_or_else(|_| "out.jsonl".to_string());
 
     let dataset: EvalDataset = if Path::new(&eval_set_path).exists() {
@@ -104,7 +107,10 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         serde_json::from_str(&content)?
     } else {
         // Fallback default sample dataset if EVAL_SET is not yet downloaded
-        eprintln!("Warning: EVAL_SET ({}) not found. Using default embedded sample.", eval_set_path);
+        eprintln!(
+            "Warning: EVAL_SET ({}) not found. Using default embedded sample.",
+            eval_set_path
+        );
         let sample = json!({
             "schema_version": "v1",
             "purpose": "Sample tool compaction test",
@@ -204,7 +210,8 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
             .expected
             .iter()
             .map(|exp| {
-                let args_str = serde_json::to_string(&exp.arguments).unwrap_or_else(|_| "{}".to_string());
+                let args_str =
+                    serde_json::to_string(&exp.arguments).unwrap_or_else(|_| "{}".to_string());
                 format!("<<call {} {}>>", exp.name, args_str)
             })
             .collect::<Vec<_>>()
@@ -251,7 +258,10 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     }
 
     out_file.flush()?;
-    println!("Evaluation completed successfully. Output written to: {}", out_path);
+    println!(
+        "Evaluation completed successfully. Output written to: {}",
+        out_path
+    );
 
     Ok(())
 }

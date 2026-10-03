@@ -19,13 +19,13 @@ pub fn validate_arguments(
     // 1. Check required fields
     if let Some(required) = schema.get("required").and_then(Value::as_array) {
         for req in required {
-            if let Some(field) = req.as_str() {
-                if !args_obj.contains_key(field) {
-                    return Err(ToolCompactError::MissingRequiredField {
-                        tool: tool_name.to_string(),
-                        field: field.to_string(),
-                    });
-                }
+            if let Some(field) = req.as_str()
+                && !args_obj.contains_key(field)
+            {
+                return Err(ToolCompactError::MissingRequiredField {
+                    tool: tool_name.to_string(),
+                    field: field.to_string(),
+                });
             }
         }
     }
@@ -90,7 +90,12 @@ pub fn extract_raw_calls(text: &str) -> Result<Vec<(String, String)>, ToolCompac
         let mut idx = call_start + marker_start.len();
 
         // Must be followed by whitespace or tool name
-        while idx < text.len() && text[idx..].chars().next().map_or(false, |c| c.is_whitespace()) {
+        while idx < text.len()
+            && text[idx..]
+                .chars()
+                .next()
+                .is_some_and(|c| c.is_whitespace())
+        {
             idx += 1;
         }
 
@@ -111,7 +116,12 @@ pub fn extract_raw_calls(text: &str) -> Result<Vec<(String, String)>, ToolCompac
         }
 
         // Skip whitespace to JSON start
-        while idx < text.len() && text[idx..].chars().next().map_or(false, |c| c.is_whitespace()) {
+        while idx < text.len()
+            && text[idx..]
+                .chars()
+                .next()
+                .is_some_and(|c| c.is_whitespace())
+        {
             idx += 1;
         }
 
@@ -147,10 +157,8 @@ pub fn extract_raw_calls(text: &str) -> Result<Vec<(String, String)>, ToolCompac
 
             if b == b'{' {
                 brace_depth += 1;
-            } else if b == b'}' {
-                if brace_depth > 0 {
-                    brace_depth -= 1;
-                }
+            } else if b == b'}' && brace_depth > 0 {
+                brace_depth -= 1;
             }
 
             // Check if we hit the closing >>
@@ -199,8 +207,7 @@ pub fn decode_calls(text: &str, tools: &[ToolDef]) -> Result<Vec<ToolCall>, Tool
         // Validate args
         validate_arguments(&name, &args_val, tool_def.function.parameters.as_ref())?;
 
-        let canonical_arguments = serde_json::to_string(&args_val)
-            .unwrap_or(raw_args);
+        let canonical_arguments = serde_json::to_string(&args_val).unwrap_or(raw_args);
 
         tool_calls.push(ToolCall {
             id: format!("call_{}", i + 1),

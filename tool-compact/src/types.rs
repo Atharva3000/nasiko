@@ -26,7 +26,11 @@ pub struct ToolDef {
 }
 
 impl ToolDef {
-    pub fn new_function(name: impl Into<String>, description: Option<String>, parameters: Option<Value>) -> Self {
+    pub fn new_function(
+        name: impl Into<String>,
+        description: Option<String>,
+        parameters: Option<Value>,
+    ) -> Self {
         Self {
             kind: "function".to_string(),
             function: FunctionDef {
@@ -60,7 +64,11 @@ pub struct ToolCall {
 }
 
 impl ToolCall {
-    pub fn new(id: impl Into<String>, name: impl Into<String>, arguments: impl Into<String>) -> Self {
+    pub fn new(
+        id: impl Into<String>,
+        name: impl Into<String>,
+        arguments: impl Into<String>,
+    ) -> Self {
         Self {
             id: id.into(),
             kind: "function".to_string(),
