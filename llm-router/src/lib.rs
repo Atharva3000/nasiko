@@ -49,7 +49,7 @@ pub use inject::{LlmInjectCtx, inject_llm_env};
 pub use resolver::{ConfigCache, ResolvedConfig};
 pub use routing::{
     AllowAllGate, CellStore, ClassifierSalienceGate, DecisionCache, InMemoryCellStore, NoopCache,
-    PgCellStore, PgTierRegistry, RedisCache, SalienceGate, TierRegistry,
+    PgCellStore, PgTierRegistry, RedisCache, RequestClassifier, SalienceGate, TierRegistry,
 };
 
 /// Shared context for the LLM router.
@@ -86,6 +86,8 @@ pub struct LlmRouterCtx {
     /// through this — the DB trigger that used to do it returned NULL for any
     /// model missing from `model_pricing`, which booked 92.8% of calls at $0.
     pub pricing: Arc<PricingEngine>,
+    /// Request classifier — maps queries to request types and complexity/confidence for model routing.
+    pub classifier: Arc<dyn RequestClassifier>,
 }
 
 impl LlmRouterCtx {
@@ -128,6 +130,13 @@ impl LlmRouterCtx {
         let cfg = Arc::new(cfg);
         let salience_gate = build_salience_gate(&cfg);
         let pricing = Arc::new(PricingEngine::new(db.clone()));
+        let classifier = routing::build_classifier(
+            &cfg.classifier_backend,
+            &cfg.classifier_model_path,
+            &cfg.classifier_endpoint,
+            cfg.classifier_timeout_ms,
+            Some(http.clone()),
+        );
         Self {
             db,
             http,
@@ -138,6 +147,7 @@ impl LlmRouterCtx {
             cell_store,
             salience_gate,
             pricing,
+            classifier,
         }
     }
 }
